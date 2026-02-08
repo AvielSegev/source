@@ -45,7 +45,7 @@ jobs:
         if: steps.update.outputs.changed == 'true' && steps.check_pr.outputs.exists == '0'
         uses: peter-evans/create-pull-request@v5
         with:
-          branch: $BRANCH_NAME
+          branch: ${{ env.BRANCH_NAME }}
           commit-message: "chore: update repo1 sha from $CURRENT_SHA to ${{ steps.target-repo.outputs.latest_sha }}"
           title: "Update target Repo HEAD"
           body: |
