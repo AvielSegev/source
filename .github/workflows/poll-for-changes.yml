@@ -1,7 +1,7 @@
 name: Poll <REPO_NAME> for Changes
 on:
   schedule:
-    - cron: '* * * * *' #changeme
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
