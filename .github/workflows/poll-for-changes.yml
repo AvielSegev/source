@@ -20,12 +20,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check if PR already exists
-        id: check_pr
-        run: |
-          PR_COUNT=$(gh pr list --head "$BRANCH_NAME" --state "open" --json number | jq 'length')
-          echo "exists=$PR_COUNT" >> $GITHUB_OUTPUT
-
       - name: Get latest SHA from target Repo
         id: target-repo
         run: |
@@ -46,13 +40,13 @@ jobs:
           fi
 
       - name: Create Pull Request
-        if: steps.update.outputs.changed == 'true' && steps.check_pr.outputs.exists == '0'
+        if: steps.update.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
           branch: ${{ env.BRANCH_NAME }}
           commit-message: "chore: update repo1 sha from $CURRENT_SHA to ${{ steps.target-repo.outputs.latest_sha }}"
           title: "Update target Repo HEAD"
           body: |
-            This is an automated PR to sync this repo with the latest SHA from $TARGET_REPO.
+            This is an automated PR to sync this repo with the latest SHA from ${{ env.TARGET_REPO }}.
             New SHA: ${{ steps.target-repo.outputs.latest_sha }}
           delete-branch: true
