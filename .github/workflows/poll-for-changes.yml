@@ -8,9 +8,10 @@ jobs:
   check-and-update:
     runs-on: ubuntu-latest
     env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TARGET_REPO: "AvielSegev/target"
       BRANCH_NAME: "auto-update-sha"
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CONFIG_FILE: "build/config.txt"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,11 +31,11 @@ jobs:
       - name: Update file
         id: update
         run: |
-          CURRENT_SHA=$(grep "my_sha_key=" config.txt | cut -d'=' -f2)
+          CURRENT_SHA=$(grep "my_sha_key=" "$CONFIG_FILE" | cut -d'=' -f2)
           NEW_SHA=${{ steps.target-repo.outputs.latest_sha }}
           
           if [ "$CURRENT_SHA" != "$NEW_SHA" ]; then
-            sed -i "s/^my_sha_key=.*/my_sha_key=$NEW_SHA/" config.txt
+            sed -i "s/^my_sha_key=.*/my_sha_key=$NEW_SHA/" "$CONFIG_FILE"
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
