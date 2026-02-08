@@ -7,8 +7,7 @@ on:
 jobs:
   check-and-update:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    vars:
       TARGET_REPO: "AvielSegev/target"
       BRANCH_NAME: "auto-update-sha"
     steps:
@@ -18,13 +17,13 @@ jobs:
       - name: Check if PR already exists
         id: check_pr
         run: |
-          PR_COUNT=$(gh pr list --head ${{ BRANCH_NAME }} --state "open" --json number | jq 'length')
+          PR_COUNT=$(gh pr list --head ${{ vars.BRANCH_NAME }} --state "open" --json number | jq 'length')
           echo "exists=$PR_COUNT" >> $GITHUB_OUTPUT
 
       - name: Get latest SHA from target Repo
         id: target-repo
         run: |
-          LATEST_SHA=$(curl -s https://api.github.com/repos/${{ TARGET_REPO }}/commits/main | jq -r '.sha')
+          LATEST_SHA=$(curl -s https://api.github.com/repos/${{ vars.TARGET_REPO }}/commits/main | jq -r '.sha')
           echo "latest_sha=$LATEST_SHA" >> $GITHUB_OUTPUT
 
       - name: Update file
@@ -44,10 +43,10 @@ jobs:
         if: steps.update.outputs.changed == 'true' && steps.check_pr.outputs.exists == '0'
         uses: peter-evans/create-pull-request@v5
         with:
-          branch: ${{ BRANCH_NAME }}
+          branch: ${{ vars.BRANCH_NAME }}
           commit-message: "chore: update repo1 sha from $CURRENT_SHA to ${{ steps.target-repo.outputs.latest_sha }}"
           title: "Update target Repo HEAD"
           body: |
-            This is an automated PR to sync this repo with the latest SHA from ${{ TARGET_REPO }}.
+            This is an automated PR to sync this repo with the latest SHA from ${{ vars.TARGET_REPO }}.
             New SHA: ${{ steps.target-repo.outputs.latest_sha }}
           delete-branch: true
