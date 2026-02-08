@@ -1,0 +1,54 @@
+name: Poll <REPO_NAME> for Changes
+on:
+  schedule:
+    - cron: '* * * * *' #changeme
+  workflow_dispatch:
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TARGET_REPO: "AvielSegev/target"
+      BRANCH_NAME: "auto-update-sha"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if PR already exists
+        id: check_pr
+        run: |
+          # Checks for an open PR created by this automation branch
+          PR_COUNT=$(gh pr list --head ${{ BRANCH_NAME }} --state "open" --json number | jq 'length')
+          echo "exists=$PR_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Get latest SHA from target Repo
+        id: target-repo
+        run: |
+          LATEST_SHA=$(curl -s https://api.github.com/repos/OWNER/${{ TARGET_REPO }}/commits/main | jq -r '.sha')
+          echo "latest_sha=$LATEST_SHA" >> $GITHUB_OUTPUT
+
+      - name: Update file
+        id: update
+        run: |
+          CURRENT_SHA=$(grep "my_sha_key=" config.txt | cut -d'=' -f2)
+          NEW_SHA=${{ steps.target-repo.outputs.latest_sha }}
+          
+          if [ "$CURRENT_SHA" != "$NEW_SHA" ]; then
+            sed -i "s/^my_sha_key=.*/my_sha_key=$NEW_SHA/" config.txt
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or Update Pull Request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: ${{ BRANCH_NAME }}
+          commit-message: "chore: update repo1 sha to ${{ steps.target-repo.outputs.latest_sha }}"
+          title: "Update target Repo HEAD"
+          body: |
+            This is an automated PR to sync this repo with the latest SHA from ${{ TARGET_REPO }}.
+            New SHA: ${{ steps.target-repo.outputs.latest_sha }}
+          delete-branch: true
