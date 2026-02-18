@@ -1,52 +1,23 @@
-name: Poll <REPO_NAME> for Changes
+name: Notify planner repo
 on:
-  schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pull-requests: write
+  push:
+    branches:
+      - main
 
 jobs:
-  check-and-update:
+  notify:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TARGET_REPO: "AvielSegev/target"
-      BRANCH_NAME: "auto-update-sha"
-      CONFIG_FILE: "build/config.txt"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Get latest SHA from target Repo
-        id: target-repo
+      - name: Send repository_dispatch
         run: |
-          LATEST_SHA=$(curl -s https://api.github.com/repos/$TARGET_REPO/commits/main | jq -r '.sha')
-          echo "latest_sha=$LATEST_SHA" >> $GITHUB_OUTPUT
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.NOTIFY_REMOTE_CHANGES }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/AvielSegev/target/dispatches \
+            -d '{
+              "event_type": "target_repo_updated",
+              "client_payload": {
+                "sha": "${{ github.sha }}"
+              }
+            }'
 
-      - name: Update file
-        id: update
-        run: |
-          CURRENT_SHA=$(grep "my_sha_key=" "$CONFIG_FILE" | cut -d'=' -f2)
-          NEW_SHA=${{ steps.target-repo.outputs.latest_sha }}
-          
-          if [ "$CURRENT_SHA" != "$NEW_SHA" ]; then
-            sed -i "s/^my_sha_key=.*/my_sha_key=$NEW_SHA/" "$CONFIG_FILE"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Pull Request
-        if: steps.update.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          branch: ${{ env.BRANCH_NAME }}
-          commit-message: "chore: update repo1 sha from $CURRENT_SHA to ${{ steps.target-repo.outputs.latest_sha }}"
-          title: "Update target Repo HEAD"
-          body: |
-            This is an automated PR to sync this repo with the latest SHA from ${{ env.TARGET_REPO }}.
-            New SHA: ${{ steps.target-repo.outputs.latest_sha }}
-          delete-branch: true
