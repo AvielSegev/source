@@ -17,7 +17,8 @@ jobs:
             -d '{
               "event_type": "target_repo_updated",
               "client_payload": {
-                "sha": "${{ github.sha }}"
+                "sha": "${{ github.sha }}",
+                "repo": "${{ github.repository }}",
               }
             }'
 
