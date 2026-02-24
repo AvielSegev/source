@@ -5,6 +5,7 @@ on:
     workflows: ["migration-planner-agent-ui-on-push"]
     types:
       - completed
+  workflow_dispatch:
 
 jobs:
   notify:
