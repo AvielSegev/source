@@ -13,8 +13,8 @@ jobs:
       - name: Start mock pipeline
         run: echo "Starting mock pipeline..."
 
-      - name: Wait 10 seconds
-        run: sleep 10
+      - name: Wait 2 seconds
+        run: sleep 2
 
       - name: Finish mock pipeline
         run: echo "Mock pipeline finished after 10 seconds."
